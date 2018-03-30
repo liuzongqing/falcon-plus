@@ -45,6 +45,7 @@ type Strategy struct {
 	RunBegin   string `json:"run_begin" gorm:"column:run_begin"`
 	RunEnd     string `json:"run_end" gorm:"column:run_end"`
 	TplId      int64  `json:"tpl_id" gorm:"column:tpl_id"`
+	Category   string `json:"category" gorm:"column:category"`
 }
 
 func (this Strategy) TableName() string {

@@ -42,4 +42,5 @@ type Expression struct {
 	ActionId   int64  `json:"action_id" gorm:"column:action_id"`
 	CreateUser string `json:"create_user" gorm:"column:create_user"`
 	Pause      int    `json:"pause" gorm:"column:pause"`
+	Category   string `json:"category" gorm:"column:category"`
 }
