@@ -36,7 +36,7 @@ func QueryStrategies(tpls map[int]*model.Template) (map[int]*model.Strategy, err
 		"select %s from strategy as s where (s.run_begin='' and s.run_end='') "+
 			"or (s.run_begin <= '%s' and s.run_end > '%s')"+
 			"or (s.run_begin > s.run_end and !(s.run_begin > '%s' and s.run_end < '%s'))",
-		"s.id, s.metric, s.tags, s.func, s.op, s.right_value, s.max_step, s.priority, s.note, s.tpl_id",
+		"s.id, s.metric, s.tags, s.func, s.op, s.right_value, s.max_step, s.priority, s.note, s.tpl_id, s.category",
 		now,
 		now,
 		now,
@@ -54,7 +54,7 @@ func QueryStrategies(tpls map[int]*model.Template) (map[int]*model.Strategy, err
 		s := model.Strategy{}
 		var tags string
 		var tid int
-		err = rows.Scan(&s.Id, &s.Metric, &tags, &s.Func, &s.Operator, &s.RightValue, &s.MaxStep, &s.Priority, &s.Note, &tid)
+		err = rows.Scan(&s.Id, &s.Metric, &tags, &s.Func, &s.Operator, &s.RightValue, &s.MaxStep, &s.Priority, &s.Note, &tid, &s.Category)
 		if err != nil {
 			log.Println("ERROR:", err)
 			continue
