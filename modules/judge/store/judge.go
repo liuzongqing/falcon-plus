@@ -91,8 +91,9 @@ func sendEvent(event *model.Event) {
 
 	// send to redis
 	// redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, event.Priority())
-	// kingsgroup修改，只向一个队列里写报警事件: event:p0
-	redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, 0)
+
+	redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, event.Category())
+	// kingsgroup修改，根据事件的配置的策略category，写入到不同的队列, event:category_name
 	rc := g.RedisConnPool.Get()
 	defer rc.Close()
 	rc.Do("LPUSH", redisKey, string(bs))

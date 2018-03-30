@@ -98,6 +98,13 @@ func (this *Event) Priority() int {
 	return this.Expression.Priority
 }
 
+func (this *Event) Category() string {
+	if this.Strategy != nil {
+		return this.Strategy.Category
+	}
+	return this.Expression.Category
+}
+
 func (this *Event) Note() string {
 	if this.Strategy != nil {
 		return this.Strategy.Note

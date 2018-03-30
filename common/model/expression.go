@@ -31,6 +31,7 @@ type Expression struct {
 	Priority   int               `json:"priority"`
 	Note       string            `json:"note"`
 	ActionId   int               `json:"actionId"`
+	Category   string            `json:"category"` // duty category, such as ops, rum, kpi
 }
 
 func (this *Expression) String() string {

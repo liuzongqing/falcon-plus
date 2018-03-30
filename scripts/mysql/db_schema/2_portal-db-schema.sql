@@ -18,6 +18,7 @@ CREATE TABLE host
   plugin_version VARCHAR(128) NOT NULL DEFAULT '',
   maintain_begin INT UNSIGNED NOT NULL DEFAULT 0,
   maintain_end   INT UNSIGNED NOT NULL DEFAULT 0,
+  come_from 	 INT 	      NOT NULL DEFAULT 1,
   update_at      TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP,
   PRIMARY KEY (id),
   UNIQUE KEY idx_host_hostname (hostname)
@@ -35,6 +36,7 @@ DROP TABLE IF EXISTS grp;
 CREATE TABLE `grp` (
   id          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   grp_name    VARCHAR(255)     NOT NULL DEFAULT '',
+  guid 	      VARCHAR(255)     NOT NULL DEFAULT '',
   create_user VARCHAR(64)      NOT NULL DEFAULT '',
   create_at   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
   come_from   TINYINT(4)       NOT NULL DEFAULT '0',
@@ -95,6 +97,7 @@ CREATE TABLE `strategy` (
   `run_begin`   VARCHAR(16)      NOT NULL DEFAULT '',
   `run_end`     VARCHAR(16)      NOT NULL DEFAULT '',
   `tpl_id`      INT(10) UNSIGNED NOT NULL DEFAULT '0',
+  `category`    VARCHAR(64)      NOT NULL DEFAULT 'ops',
   PRIMARY KEY (`id`),
   KEY `idx_strategy_tpl_id` (`tpl_id`)
 )
@@ -116,6 +119,7 @@ CREATE TABLE `expression` (
   `action_id`   INT(10) UNSIGNED NOT NULL DEFAULT '0',
   `create_user` VARCHAR(64)      NOT NULL DEFAULT '',
   `pause`       TINYINT(1)       NOT NULL DEFAULT '0',
+  `category`    VARCHAR(64)      NOT NULL DEFAULT 'ops',
   PRIMARY KEY (`id`)
 )
   ENGINE =InnoDB
@@ -148,6 +152,43 @@ CREATE TABLE `plugin_dir` (
   DEFAULT CHARSET =utf8
   COLLATE =utf8_unicode_ci;
 
+CREATE TABLE `variable` (
+  `id`          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `grp_id`      INT(10) UNSIGNED NOT NULL,
+  `name`        VARCHAR(255)     NOT NULL,
+  `content`     VARCHAR(1024)    NOT NULL,
+  `note`        VARCHAR(1024)    NOT NULL,
+  `create_user` VARCHAR(64)      NOT NULL DEFAULT '',
+  `create_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_variable_grp_id` (`grp_id`),
+  UNIQUE KEY `grp_id_name`(`grp_id`, `name`)
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8
+  COLLATE =utf8_unicode_ci;
+
+CREATE TABLE `metrics` (
+  `id`          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`        VARCHAR(255)     NOT NULL,
+  `update_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `metric_name`(`name`)
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8
+  COLLATE =utf8_unicode_ci;
+
+CREATE TABLE `tags` (
+  `id`          INT(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `name`        VARCHAR(255)     NOT NULL,
+  `update_at`   TIMESTAMP        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `tag_name`(`name`)
+)
+  ENGINE =InnoDB
+  DEFAULT CHARSET =utf8
+  COLLATE =utf8_unicode_ci;
 
 DROP TABLE IF EXISTS action;
 CREATE TABLE `action` (

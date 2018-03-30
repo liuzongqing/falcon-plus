@@ -31,6 +31,7 @@ type Strategy struct {
 	Priority   int               `json:"priority"`
 	Note       string            `json:"note"`
 	Tpl        *Template         `json:"tpl"`
+	Category   string            `json:"category"` // duty category, such as ops, rum, kpi
 }
 
 func (this *Strategy) String() string {
