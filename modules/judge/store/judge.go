@@ -35,6 +35,9 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 		return
 	}
 
+	metricLevelMap := make(map[string]bool)
+	//kingsgroup修改: 用于记录相同metric,不同报警级别的检测结果，如果critical级别检测到报警，则不再对warning的检测
+
 	for _, s := range strategies {
 		// 因为key仅仅是endpoint和metric，所以得到的strategies并不一定是与当前judgeItem相关的
 		// 比如lg-dinp-docker01.bj配置了两个proc.num的策略，一个name=docker，一个name=agent
@@ -51,20 +54,41 @@ func CheckStrategy(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 			continue
 		}
 
-		judgeItemWithStrategy(L, s, firstItem, now)
+		//kingsgroup修改: 开始检测并记录报警结果
+		metric := s.Metric
+		level := s.Priority
+		key := fmt.Sprintf("%s_%d", metric, level)
+		if level > 0 {
+			// 只有priority大于0时才检测，如果是0(表示最高级别)总是去检测
+			need_check_flag := true //标记检测结果, 默认需要检测报警
+			for i := 0; i < level; i++ {
+				// 只检查高于当次priority的检测结果
+				check_key := fmt.Sprintf("%s_%d", metric, i)
+				if ret, exists := metricLevelMap[check_key]; exists && ret {
+					// 如果已经在检测结果中，并且结果为true,代表不用再检测低级别的表达式
+					need_check_flag = false
+					break
+				}
+			}
+			if !need_check_flag {
+				continue
+			}
+		}
+
+		metricLevelMap[key] = judgeItemWithStrategy(L, s, firstItem, now)
 	}
 }
 
-func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem *model.JudgeItem, now int64) {
+func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem *model.JudgeItem, now int64) bool {
 	fn, err := ParseFuncFromString(strategy.Func, strategy.Operator, strategy.RightValue)
 	if err != nil {
 		log.Printf("[ERROR] parse func %s fail: %v. strategy id: %d", strategy.Func, err, strategy.Id)
-		return
+		return false
 	}
 
 	historyData, leftValue, isTriggered, isEnough := fn.Compute(L)
 	if !isEnough {
-		return
+		return false
 	}
 
 	event := &model.Event{
@@ -76,7 +100,7 @@ func judgeItemWithStrategy(L *SafeLinkedList, strategy model.Strategy, firstItem
 		PushedTags: firstItem.Tags,
 	}
 
-	sendEventIfNeed(historyData, isTriggered, now, event, strategy.MaxStep)
+	return sendEventIfNeed(historyData, isTriggered, now, event, strategy.MaxStep)
 }
 
 func sendEvent(event *model.Event) {
@@ -92,8 +116,9 @@ func sendEvent(event *model.Event) {
 	// send to redis
 	// redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, event.Priority())
 
-	redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, event.Category())
+	// redisKey := fmt.Sprintf(g.Config().Alarm.QueuePattern, event.Category())
 	// kingsgroup修改，根据事件的配置的策略category，写入到不同的队列, event:category_name
+	redisKey := g.Config().Alarm.Queue // 增加queue配置项
 	rc := g.RedisConnPool.Get()
 	defer rc.Close()
 	rc.Do("LPUSH", redisKey, string(bs))
@@ -115,13 +140,38 @@ func CheckExpression(L *SafeLinkedList, firstItem *model.JudgeItem, now int64) {
 			continue
 		}
 
+		metricLevelMap := make(map[string]bool)
+		//kingsgroup修改: 用于记录相同metric,不同报警级别的检测结果，如果critical级别检测到报警，则不再对warning的检测
+
 		related := filterRelatedExpressions(expressions, firstItem)
 		for _, exp := range related {
 			if _, ok := handledExpression[exp.Id]; ok {
 				continue
 			}
 			handledExpression[exp.Id] = struct{}{}
-			judgeItemWithExpression(L, exp, firstItem, now)
+
+			//kingsgroup修改: 开始检测并记录报警结果
+			metric := exp.Metric
+			level := exp.Priority
+			key := fmt.Sprintf("%s_%d", metric, level)
+			if level > 0 {
+				// 只有priority大于0时才检测，如果是0(表示最高级别)总是去检测
+				need_check_flag := true //标记检测结果, 默认需要检测报警
+				for i := 0; i < level; i++ {
+					// 只检查高于当次priority的检测结果
+					check_key := fmt.Sprintf("%s_%d", metric, i)
+					if ret, exists := metricLevelMap[check_key]; exists && ret {
+						// 如果已经在检测结果中，并且结果为true,代表不用再检测低级别的表达式
+						need_check_flag = false
+						break
+					}
+				}
+				if !need_check_flag {
+					continue
+				}
+			}
+
+			metricLevelMap[key] = judgeItemWithExpression(L, exp, firstItem, now)
 		}
 	}
 }
@@ -180,16 +230,16 @@ func copyItemTags(item *model.JudgeItem) map[string]string {
 	return ret
 }
 
-func judgeItemWithExpression(L *SafeLinkedList, expression *model.Expression, firstItem *model.JudgeItem, now int64) {
+func judgeItemWithExpression(L *SafeLinkedList, expression *model.Expression, firstItem *model.JudgeItem, now int64) bool {
 	fn, err := ParseFuncFromString(expression.Func, expression.Operator, expression.RightValue)
 	if err != nil {
 		log.Printf("[ERROR] parse func %s fail: %v. expression id: %d", expression.Func, err, expression.Id)
-		return
+		return false
 	}
 
 	historyData, leftValue, isTriggered, isEnough := fn.Compute(L)
 	if !isEnough {
-		return
+		return false
 	}
 
 	event := &model.Event{
@@ -201,11 +251,11 @@ func judgeItemWithExpression(L *SafeLinkedList, expression *model.Expression, fi
 		PushedTags: firstItem.Tags,
 	}
 
-	sendEventIfNeed(historyData, isTriggered, now, event, expression.MaxStep)
+	return sendEventIfNeed(historyData, isTriggered, now, event, expression.MaxStep)
 
 }
 
-func sendEventIfNeed(historyData []*model.HistoryData, isTriggered bool, now int64, event *model.Event, maxStep int) {
+func sendEventIfNeed(historyData []*model.HistoryData, isTriggered bool, now int64, event *model.Event, maxStep int) bool {
 	lastEvent, exists := g.LastEvents.Get(event.Id)
 	if isTriggered {
 		event.Status = "PROBLEM"
@@ -220,7 +270,7 @@ func sendEventIfNeed(historyData []*model.HistoryData, isTriggered bool, now int
 			// }
 
 			sendEvent(event)
-			return
+			return true
 		}
 
 		// 逻辑走到这里，说明之前Event是PROBLEM状态
@@ -233,7 +283,7 @@ func sendEventIfNeed(historyData []*model.HistoryData, isTriggered bool, now int
 		if historyData[len(historyData)-1].Timestamp <= lastEvent.EventTime {
 			// 产生过报警的点，就不能再使用来判断了，否则容易出现一分钟报一次的情况
 			// 只需要拿最后一个historyData来做判断即可，因为它的时间最老
-			return
+			return false
 		}
 
 		// kingsgroup修改, 报警间隔由duty控制，取消这里的限制
@@ -244,12 +294,15 @@ func sendEventIfNeed(historyData []*model.HistoryData, isTriggered bool, now int
 
 		event.CurrentStep = lastEvent.CurrentStep + 1
 		sendEvent(event)
+		return true
 	} else {
 		// 如果LastEvent是Problem，报OK，否则啥都不做
 		if exists && lastEvent.Status[0] == 'P' {
 			event.Status = "OK"
 			event.CurrentStep = 1
 			sendEvent(event)
+			return true
 		}
+		return false
 	}
 }

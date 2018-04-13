@@ -48,6 +48,7 @@ type RedisConfig struct {
 type AlarmConfig struct {
 	Enabled      bool         `json:"enabled"`
 	MinInterval  int64        `json:"minInterval"`
+	Queue        string       `json:"queue"`
 	QueuePattern string       `json:"queuePattern"`
 	Redis        *RedisConfig `json:"redis"`
 }
