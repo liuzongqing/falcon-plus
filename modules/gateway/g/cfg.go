@@ -25,6 +25,7 @@ import (
 type HttpConfig struct {
 	Enabled bool   `json:"enabled"`
 	Listen  string `json:"listen"`
+	Timeout int  `json:"timeout"`
 }
 
 type RpcConfig struct {

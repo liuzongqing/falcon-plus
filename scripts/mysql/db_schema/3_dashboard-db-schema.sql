@@ -56,6 +56,7 @@ CREATE TABLE `dashboard_screen` (
   `pid` int(11) unsigned NOT NULL DEFAULT '0',
   `name` char(128) NOT NULL,
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `full_name` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_pid` (`pid`),
   UNIQUE KEY `idx_pid_n` (`pid`,`name`)

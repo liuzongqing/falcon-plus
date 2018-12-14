@@ -21,6 +21,7 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/open-falcon/falcon-plus/modules/gateway/g"
+	"time"
 )
 
 type Dto struct {
@@ -42,6 +43,9 @@ func startHttpServer() {
 		return
 	}
 
+	timeout := 300
+	timeout = g.Config().Http.Timeout
+
 	configCommonRoutes()
 	configProcHttpRoutes()
 	configApiHttpRoutes()
@@ -49,6 +53,8 @@ func startHttpServer() {
 	s := &http.Server{
 		Addr:           addr,
 		MaxHeaderBytes: 1 << 30,
+		ReadTimeout:    time.Duration(timeout) * time.Second,
+		WriteTimeout:   time.Duration(timeout) * time.Second,
 	}
 
 	log.Println("http.startHttpServer ok, listening", addr)

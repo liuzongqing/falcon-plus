@@ -33,6 +33,7 @@ func Routes(r *gin.Engine) {
 	authapi.Use(utils.AuthSessionMidd)
 	authapi.GET("/graph/endpointobj", EndpointObjGet)
 	authapi.GET("/graph/endpoint", EndpointRegexpQuery)
+	authapi.GET("/graph/endpoints", EndpointsQuery)
 	authapi.GET("/graph/endpoint_counter", EndpointCounterRegexpQuery)
 	authapi.POST("/graph/history", QueryGraphDrawData)
 	authapi.POST("/graph/lastpoint", QueryGraphLastPoint)

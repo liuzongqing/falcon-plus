@@ -269,3 +269,18 @@ CREATE TABLE alert_link
   DEFAULT CHARSET =utf8
   COLLATE =utf8_unicode_ci;
 
+
+DROP TABLE IF EXISTS hook;
+CREATE TABLE `hook` (
+  `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `strategy_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `expression_id` int(10) unsigned NOT NULL DEFAULT '0',
+  `when_status` enum('OK','PROBLEM') COLLATE utf8_unicode_ci NOT NULL DEFAULT 'OK',
+  `when_step` int(10) unsigned DEFAULT '1',
+  `hook_method` enum('GET','POST','DELETE','PUT','CALL') COLLATE utf8_unicode_ci DEFAULT 'GET',
+  `hook_url` varchar(1024) COLLATE utf8_unicode_ci DEFAULT NULL,
+  `params` varchar(1024) COLLATE utf8_unicode_ci DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_strategy_id` (`strategy_id`),
+  KEY `idx_expression_id` (`expression_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci

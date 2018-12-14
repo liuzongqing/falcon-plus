@@ -152,6 +152,49 @@ func EndpointRegexpQuery(c *gin.Context) {
 	h.JSONR(c, endpoints)
 }
 
+type APIEndpointsQueryInputs struct {
+	Endpoints string `json:"endpoints" form:"endpoints"`
+}
+
+func EndpointsQuery(c *gin.Context) {
+	inputs := APIEndpointsQueryInputs{}
+	if err := c.Bind(&inputs); err != nil {
+		h.JSONR(c, badstatus, err)
+		return
+	}
+	if inputs.Endpoints == "" {
+		h.JSONR(c, http.StatusBadRequest, "endpoints missing")
+		return
+	}
+
+	endpoints := []string{}
+	if inputs.Endpoints != "" {
+		endpoints = strings.Split(inputs.Endpoints, ",")
+	}
+
+	var endpoint []m.Endpoint
+	var dt *gorm.DB
+	if len(endpoints) != 0 {
+		dt = db.Graph.Table("endpoint").
+			Select("endpoint, id")
+		dt = dt.Where("endpoint in (?)", endpoints).Scan(&endpoint)
+	} else {
+		h.JSONR(c, http.StatusBadRequest, "no endpoints to query")
+		return
+	}
+	if dt.Error != nil {
+		h.JSONR(c, http.StatusBadRequest, dt.Error)
+		return
+	}
+
+	query_endpoints := []map[string]interface{}{}
+	for _, e := range endpoint {
+		query_endpoints = append(query_endpoints, map[string]interface{}{"id": e.ID, "endpoint": e.Endpoint})
+	}
+
+	h.JSONR(c, query_endpoints)
+}
+
 func EndpointCounterRegexpQuery(c *gin.Context) {
 	eid := c.DefaultQuery("eid", "")
 	metricQuery := c.DefaultQuery("metricQuery", ".+")
